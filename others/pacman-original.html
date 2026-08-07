@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beta! Game: Pac-Man Maze | Sara's AWS Arcade</title>
+  <style>
+    /* CSS RESET & FONTS */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #2c3325;
+      color: #ffffff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+      padding: 20px;
+    }
+
+    /* PAGE TITLE */
+    .page-title {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .page-title h1 {
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: #b5be8a;
+      margin-bottom: 6px;
+    }
+
+    .page-title p {
+      font-size: 0.95rem;
+      opacity: 0.85;
+      color: #ffffff;
+    }
+
+    /* GAME PAGE CONTAINER */
+    .game-page-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 450px;
+      width: 100%;
+    }
+
+    .game-card-beta {
+      width: 100%;
+      background-color: #2c3325;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+      display: flex;
+      flex-direction: column;
+      border: 2px solid #3b4432;
+    }
+
+    .game-header {
+      background-color: #f7f9ee;
+      padding: 14px 20px;
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #1e2319;
+      border-bottom: 2px solid #3b4432;
+    }
+
+    .game-body {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      color: #ffffff;
+    }
+
+    .game-status {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: #b5be8a;
+      min-height: 24px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    /* PAC-MAN CANVAS & CONTROLS */
+    canvas#pacmanCanvas {
+      background-color: #1e2319;
+      border-radius: 10px;
+      border: 2px solid #3b4432;
+      display: block;
+      margin-bottom: 15px;
+    }
+
+    .pacman-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 46px);
+      grid-template-rows: repeat(2, 38px);
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    .control-btn {
+      background-color: #3b4432;
+      color: #b5be8a;
+      border: 2px solid #b5be8a;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s, color 0.1s;
+    }
+
+    .control-btn:active {
+      background-color: #b5be8a;
+      color: #1e2319;
+    }
+
+    /* ACTION BAR BTNS */
+    .action-bar {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+      justify-content: center;
+      margin-top: 5px;
+    }
+
+    .difficulty-btn {
+      background-color: #3b4432;
+      color: #b5be8a;
+      border: 2px solid #b5be8a;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      outline: none;
+      flex: 1;
+      transition: background 0.2s;
+    }
+
+    .difficulty-btn:hover {
+      background-color: #4a553f;
+    }
+
+    .action-btn {
+      background-color: #b5be8a;
+      color: #1e2319;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      flex: 1;
+      transition: background 0.2s;
+    }
+
+    .action-btn:hover {
+      background-color: #d2daab;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE TITLE -->
+  <div class="page-title">
+    <h1>🧪 Beta! Game: Pac-Man Maze</h1>
+    <p>Grab fruits (+50) & rare white hearts (🤍 +30) to turn ghosts white & eat them!</p>
+  </div>
+
+  <!-- GAME CONTAINER -->
+  <main class="game-page-container">
+    <div class="game-card-beta">
+      <div class="game-header">
+        <span>Pac-Man Maze Beta</span>
+        <span style="font-size: 0.85rem; font-weight: normal;">Score: <span id="pacScore">0</span></span>
+      </div>
+      <div class="game-body">
+        <div class="game-status" id="pacStatus">Press Start to Play!</div>
+        <canvas id="pacmanCanvas" width="280" height="200"></canvas>
+        
+        <!-- On-Screen Directional Controls -->
+        <div class="pacman-controls">
+          <div></div>
+          <button class="control-btn" onclick="setNextDir(-1, 0)">▲</button>
+          <div></div>
+          <button class="control-btn" onclick="setNextDir(0, -1)">◄</button>
+          <button class="control-btn" onclick="setNextDir(1, 0)">▼</button>
+          <button class="control-btn" onclick="setNextDir(0, 1)">►</button>
+        </div>
+
+        <!-- ACTION BAR WITH DIFFICULTY & START BUTTONS -->
+        <div class="action-bar">
+          <button id="difficultyBtn" class="difficulty-btn" onclick="toggleDifficulty()">Normal</button>
+          <button class="action-btn" onclick="startPacman()">Start</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    /* ----------------------------------------------------
+        GLOBAL ARROW KEY SCROLL PREVENTION
+    ---------------------------------------------------- */
+    window.addEventListener('keydown', e => {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key)) {
+        e.preventDefault();
+      }
+      if (pacGameActive) {
+        if (e.key === 'ArrowUp') setNextDir(-1, 0);
+        if (e.key === 'ArrowDown') setNextDir(1, 0);
+        if (e.key === 'ArrowLeft') setNextDir(0, -1);
+        if (e.key === 'ArrowRight') setNextDir(0, 1);
+      }
+    });
+
+    /* ----------------------------------------------------
+       PAC-MAN MAZE GAME LOGIC
+    ---------------------------------------------------- */
+    const pacCanvas = document.getElementById('pacmanCanvas');
+    const pacCtx = pacCanvas.getContext('2d');
+
+    const tileSize = 20;
+    const cols = pacCanvas.width / tileSize; // 14
+    const rows = pacCanvas.height / tileSize; // 10
+
+    let map = [];
+    let pac = { r: 1, c: 1, x: 30, y: 30, dx: 0, dy: 0 };
+    let nextDir = { r: 0, c: 0 };
+    let pacDots = [];
+    let currentFruit = null;
+    let currentHeart = null;
+    let fruitTimer = null;
+    let heartTimer = null;
+    let ghostVulnerableTimer = null;
+    let ghosts = [];
+    let pacScore = 0;
+    let pacInterval = null;
+    let pacGameActive = false;
+    let ghostsVulnerable = false;
+    let heartVulnerableStartTime = 0;
+    const vulnerabilityDuration = 6000; // 6 seconds in milliseconds
+    let currentDifficulty = 'Normal';
+
+    // Difficulty toggle cycle: Normal -> Hard -> Easy -> Normal
+    window.toggleDifficulty = function() {
+      if (currentDifficulty === 'Normal') {
+        currentDifficulty = 'Hard';
+      } else if (currentDifficulty === 'Hard') {
+        currentDifficulty = 'Easy';
+      } else {
+        currentDifficulty = 'Normal';
+      }
+      document.getElementById('difficultyBtn').textContent = currentDifficulty;
+
+      // If a game is currently running, seamlessly update its speed
+      if (pacGameActive) {
+        restartGameLoopSpeed();
+      }
+    };
+
+    function getSpeedInterval() {
+      switch (currentDifficulty) {
+        case 'Easy': return 280;   // Slower interval = slower ghosts
+        case 'Hard': return 160;   // Faster interval = faster ghosts
+        case 'Normal':
+        default: return 220;       // Standard baseline speed
+      }
+    }
+
+    function restartGameLoopSpeed() {
+      if (pacInterval) clearInterval(pacInterval);
+      pacInterval = setInterval(updateGame, getSpeedInterval());
+    }
+
+    function validateAccessibility(layout) {
+      let visited = Array(rows).fill(0).map(() => Array(cols).fill(false));
+      let queue = [{r: 1, c: 1}];
+      visited[1][1] = true;
+      let reachableCount = 0;
+      let totalOpen = 0;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (layout[r][c] === 0) totalOpen++;
+        }
+      }
+
+      while (queue.length > 0) {
+        let curr = queue.shift();
+        reachableCount++;
+        let dirs = [{r: -1, c: 0}, {r: 1, c: 0}, {r: 0, c: -1}, {r: 0, c: 1}];
+        dirs.forEach(d => {
+          let nr = curr.r + d.r;
+          let nc = curr.c + d.c;
+          if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && layout[nr][nc] === 0 && !visited[nr][nc]) {
+            visited[nr][nc] = true;
+            queue.push({r: nr, c: nc});
+          }
+        });
+      }
+
+      return reachableCount === totalOpen;
+    }
+
+    function generateGuaranteedConnectedLayout() {
+      let valid = false;
+      let attempts = 0;
+
+      while (!valid && attempts < 100) {
+        attempts++;
+        let testMap = Array(rows).fill(0).map(() => Array(cols).fill(1));
+        for (let r = 1; r < rows - 1; r++) {
+          for (let c = 1; c < cols - 1; c++) {
+            testMap[r][c] = 0;
+          }
+        }
+
+        for (let i = 0; i < 18; i++) {
+          let sr = Math.floor(Math.random() * (rows - 4)) + 2;
+          let sc = Math.floor(Math.random() * (cols - 4)) + 2;
+          let length = Math.floor(Math.random() * 4) + 2;
+          let isVertical = Math.random() < 0.5;
+          let isLShape = Math.random() < 0.3;
+
+          let possible = true;
+          let coords = [];
+          for (let j = 0; j < length; j++) {
+            let cr = sr + (isVertical ? j : 0);
+            let cc = sc + (isVertical ? 0 : j);
+            if (cr <= 0 || cr >= rows - 1 || cc <= 0 || cc >= cols - 1 || (cr <= 2 && cc <= 2) || (cr >= rows - 3 && cc >= cols - 3)) {
+              possible = false;
+              break;
+            }
+            coords.push({r: cr, c: cc});
+          }
+
+          let lCoords = [];
+          if (possible && isLShape && length >= 3) {
+            let branchLen = Math.floor(Math.random() * 2) + 2;
+            let pivot = coords[Math.floor(coords.length / 2)];
+            let dirOffset = Math.random() < 0.5 ? 1 : -1;
+            for (let k = 1; k <= branchLen; k++) {
+              let br = pivot.r + (isVertical ? 0 : k * dirOffset);
+              let bc = pivot.c + (isVertical ? k * dirOffset : 0);
+              if (br <= 0 || br >= rows - 1 || bc <= 0 || bc >= cols - 1) break;
+              lCoords.push({r: br, c: bc});
+            }
+          }
+
+          if (possible) {
+            coords.forEach(pt => testMap[pt.r][pt.c] = 1);
+            lCoords.forEach(pt => testMap[pt.r][pt.c] = 1);
+          }
+        }
+
+        testMap[1][1] = 0;
+        testMap[1][2] = 0;
+        testMap[2][1] = 0;
+        testMap[rows - 2][cols - 2] = 0;
+        testMap[rows - 2][cols - 3] = 0;
+        testMap[rows - 3][cols - 2] = 0;
+
+        if (validateAccessibility(testMap)) {
+          map = testMap;
+          valid = true;
+        }
+      }
+
+      if (!valid) {
+        map = Array(rows).fill(0).map(() => Array(cols).fill(1));
+        for (let r = 1; r < rows - 1; r++) {
+          for (let c = 1; c < cols - 1; c++) {
+            map[r][c] = 0;
+          }
+        }
+      }
+    }
+
+    function initItems() {
+      pacDots = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (map[r][c] === 0 && !(r === 1 && c === 1)) {
+            pacDots.push({ r: r, c: c, active: true });
+          }
+        }
+      }
+      currentFruit = null;
+      currentHeart = null;
+    }
+
+    function spawnRandomFruit() {
+      if (!pacGameActive) return;
+      const emptyTiles = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (map[r][c] === 0 && !(r === 1 && c === 1)) {
+            emptyTiles.push({ r: r, c: c });
+          }
+        }
+      }
+      if (emptyTiles.length > 0) {
+        const spot = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+        const fruitTypes = ['🍒', '🍌', '🍎', '🍓'];
+        currentFruit = {
+          r: spot.r,
+          c: spot.c,
+          type: fruitTypes[Math.floor(Math.random() * fruitTypes.length)]
+        };
+      }
+    }
+
+    function spawnRandomHeart() {
+      if (!pacGameActive) return;
+      if (ghostsVulnerable) return;
+
+      const emptyTiles = [];
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (map[r][c] === 0 && !(r === 1 && c === 1)) {
+            emptyTiles.push({ r: r, c: c });
+          }
+        }
+      }
+      if (emptyTiles.length > 0) {
+        const spot = emptyTiles[Math.floor(Math.random() * emptyTiles.length)];
+        currentHeart = {
+          r: spot.r,
+          c: spot.c,
+          type: '🤍'
+        };
+      }
+    }
+
+    function drawMaze() {
+      pacCtx.fillStyle = '#1e2319';
+      pacCtx.fillRect(0, 0, pacCanvas.width, pacCanvas.height);
+
+      pacCtx.fillStyle = '#3b4432';
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (map[r][c] === 1) {
+            pacCtx.fillRect(c * tileSize, r * tileSize, tileSize, tileSize);
+          }
+        }
+      }
+    }
+
+    function drawPacman(x, y, dx, dy) {
+      pacCtx.fillStyle = '#f1c40f';
+      pacCtx.beginPath();
+      
+      let angle = 0;
+      if (dy > 0) angle = 0;
+      else if (dy < 0) angle = Math.PI;
+      else if (dx > 0) angle = Math.PI / 2;
+      else if (dx < 0) angle = Math.PI * 1.5;
+
+      let mouthOpen = Math.floor(Date.now() / 120) % 2 === 0;
+
+      if (mouthOpen && (dx !== 0 || dy !== 0)) {
+        pacCtx.arc(x, y, 8, angle + 0.2 * Math.PI, angle + 1.8 * Math.PI);
+        pacCtx.lineTo(x, y);
+      } else {
+        pacCtx.arc(x, y, 8, 0, Math.PI * 2);
+      }
+      pacCtx.fill();
+
+      pacCtx.fillStyle = '#1e2319';
+      let eyeX = x, eyeY = y - 3;
+      if (dy > 0) { eyeX = x + 1; eyeY = y - 3; }
+      else if (dy < 0) { eyeX = x - 1; eyeY = y - 3; }
+      else if (dx > 0) { eyeX = x + 3; eyeY = y; }
+      else if (dx < 0) { eyeX = x - 3; eyeY = y - 2; }
+      
+      pacCtx.beginPath();
+      pacCtx.arc(eyeX, eyeY, 1.2, 0, Math.PI * 2);
+      pacCtx.fill();
+    }
+
+    function drawGhost(x, y, color, isEaten) {
+      if (isEaten) return;
+      let r = 8;
+      pacCtx.fillStyle = color;
+      
+      pacCtx.beginPath();
+      pacCtx.arc(x, y - 1, r, Math.PI, 0, false);
+      pacCtx.lineTo(x + r, y + r);
+      pacCtx.lineTo(x + r - 2, y + r - 2);
+      pacCtx.lineTo(x + r - 4, y + r);
+      pacCtx.lineTo(x, y + r - 2);
+      pacCtx.lineTo(x - r + 4, y + r);
+      pacCtx.lineTo(x - r + 2, y + r - 2);
+      pacCtx.lineTo(x - r, y + r);
+      pacCtx.closePath();
+      pacCtx.fill();
+
+      pacCtx.fillStyle = color === '#ffffff' ? '#e74c3c' : '#ffffff';
+      pacCtx.beginPath();
+      pacCtx.arc(x - 3, y - 2, 2.5, 0, Math.PI * 2);
+      pacCtx.arc(x + 3, y - 2, 2.5, 0, Math.PI * 2);
+      pacCtx.fill();
+
+      pacCtx.fillStyle = color === '#ffffff' ? '#c0392b' : '#2980b9';
+      pacCtx.beginPath();
+      pacCtx.arc(x - 3, y - 2, 1, 0, Math.PI * 2);
+      pacCtx.arc(x + 3, y - 2, 1, 0, Math.PI * 2);
+      pacCtx.fill();
+    }
+
+    function drawPreview() {
+      generateGuaranteedConnectedLayout();
+      initItems();
+      drawMaze();
+      pacCtx.fillStyle = '#d2daab';
+      pacDots.forEach(d => {
+        pacCtx.beginPath();
+        pacCtx.arc(d.c * tileSize + tileSize/2, d.r * tileSize + tileSize/2, 2.5, 0, Math.PI * 2);
+        pacCtx.fill();
+      });
+      drawPacman(30, 30, 0, 1);
+      drawGhost(250, 170, '#e74c3c', false);
+    }
+
+    drawPreview();
+
+    function setNextDir(dr, dc) {
+      if (!pacGameActive) return;
+      nextDir = { r: dr, c: dc };
+    }
+
+    function startPacman() {
+      if (pacInterval) clearInterval(pacInterval);
+      if (fruitTimer) clearInterval(fruitTimer);
+      if (heartTimer) clearInterval(heartTimer);
+      if (ghostVulnerableTimer) clearTimeout(ghostVulnerableTimer);
+
+      generateGuaranteedConnectedLayout();
+      initItems();
+
+      pac = { r: 1, c: 1, x: 1 * tileSize + tileSize/2, y: 1 * tileSize + tileSize/2, dx: 0, dy: 0 };
+      nextDir = { r: 0, c: 0 };
+      pacScore = 0;
+      pacGameActive = true;
+      ghostsVulnerable = false;
+      document.getElementById('pacScore').textContent = '0';
+      document.getElementById('pacStatus').textContent = 'Press a direction button to move!';
+      
+      ghosts = [
+        { r: rows - 2, c: cols - 2, x: (cols - 2) * tileSize + tileSize/2, y: (rows - 2) * tileSize + tileSize/2, color: '#e74c3c', origColor: '#e74c3c', eaten: false, respawnTimeout: null },
+        { r: rows - 2, c: cols - 3, x: (cols - 3) * tileSize + tileSize/2, y: (rows - 2) * tileSize + tileSize/2, color: '#3498db', origColor: '#3498db', eaten: false, respawnTimeout: null }
+      ];
+
+      pacInterval = setInterval(updateGame, getSpeedInterval());
+
+      fruitTimer = setInterval(() => {
+        if (pacGameActive) {
+          if (currentFruit) currentFruit = null;
+          else spawnRandomFruit();
+        }
+      }, 5000);
+
+      heartTimer = setInterval(() => {
+        if (pacGameActive && !currentHeart) {
+          spawnRandomHeart();
+        }
+      }, 14000);
+    }
+
+    function updateGame() {
+      if (!pacGameActive) return;
+
+      let targetR = pac.r + nextDir.r;
+      let targetC = pac.c + nextDir.c;
+      if (targetR >= 0 && targetR < rows && targetC >= 0 && targetC < cols && map[targetR][targetC] === 0) {
+        pac.dx = nextDir.r;
+        pac.dy = nextDir.c;
+      }
+
+      let nextR = pac.r + pac.dx;
+      let nextC = pac.c + pac.dy;
+      if (nextR >= 0 && nextR < rows && nextC >= 0 && nextC < cols && map[nextR][nextC] === 0) {
+        pac.r = nextR;
+        pac.c = nextC;
+      } else {
+        pac.dx = 0;
+        pac.dy = 0;
+      }
+
+      pac.x = pac.c * tileSize + tileSize / 2;
+      pac.y = pac.r * tileSize + tileSize / 2;
+
+      pacDots.forEach(dot => {
+        if (dot.active && dot.r === pac.r && dot.c === pac.c) {
+          dot.active = false;
+          pacScore += 10;
+          document.getElementById('pacScore').textContent = pacScore;
+        }
+      });
+
+      if (currentFruit && currentFruit.r === pac.r && currentFruit.c === pac.c) {
+        pacScore += 50;
+        document.getElementById('pacScore').textContent = pacScore;
+        currentFruit = null;
+      }
+
+      if (currentHeart && currentHeart.r === pac.r && currentHeart.c === pac.c) {
+        pacScore += 30;
+        document.getElementById('pacScore').textContent = pacScore;
+        currentHeart = null;
+        
+        ghostsVulnerable = true;
+        heartVulnerableStartTime = Date.now();
+
+        ghosts.forEach(g => {
+          if (!g.eaten) g.color = '#ffffff';
+          if (g.respawnTimeout) clearTimeout(g.respawnTimeout);
+        });
+
+        if (ghostVulnerableTimer) clearTimeout(ghostVulnerableTimer);
+        ghostVulnerableTimer = setTimeout(() => {
+          ghostsVulnerable = false;
+          ghosts.forEach(g => {
+            if (!g.eaten) g.color = g.origColor;
+          });
+        }, vulnerabilityDuration);
+      }
+
+      if (ghostsVulnerable) {
+        let timeLeft = Math.max(0, Math.ceil((vulnerabilityDuration - (Date.now() - heartVulnerableStartTime)) / 1000));
+        document.getElementById('pacStatus').textContent = `⚡ Ghosts White! Countdown: ${timeLeft}s`;
+      } else {
+        document.getElementById('pacStatus').textContent = 'Navigate the maze & avoid the ghosts!';
+      }
+
+      let remainingDots = pacDots.filter(d => d.active).length;
+      if (remainingDots === 0) {
+        clearInterval(pacInterval);
+        clearInterval(fruitTimer);
+        clearInterval(heartTimer);
+        if (ghostVulnerableTimer) clearTimeout(ghostVulnerableTimer);
+        ghosts.forEach(g => { if (g.respawnTimeout) clearTimeout(g.respawnTimeout); });
+        pacGameActive = false;
+        document.getElementById('pacStatus').textContent = '🎉 Brilliant! You cleared the maze!';
+        return;
+      }
+
+      ghosts.forEach(g => {
+        if (g.eaten) return;
+
+        let directions = [
+          {r: -1, c: 0}, {r: 1, c: 0}, {r: 0, c: -1}, {r: 0, c: 1}
+        ];
+
+        let validMoves = directions.filter(d => {
+          let nr = g.r + d.r;
+          let nc = g.c + d.c;
+          return nr >= 0 && nr < rows && nc >= 0 && nc < cols && map[nr][nc] === 0;
+        });
+
+        if (validMoves.length > 0) {
+          let chosen;
+          if (Math.random() < 0.6) {
+            chosen = validMoves[Math.floor(Math.random() * validMoves.length)];
+          } else {
+            validMoves.sort((a, b) => {
+              let distA = Math.abs((g.r + a.r) - pac.r) + Math.abs((g.c + a.c) - pac.c);
+              let distB = Math.abs((g.r + b.r) - pac.r) + Math.abs((g.c + b.c) - pac.c);
+              return distA - distB;
+            });
+            chosen = validMoves[0];
+          }
+          g.r += chosen.r;
+          g.c += chosen.c;
+        }
+
+        g.x = g.c * tileSize + tileSize / 2;
+        g.y = g.r * tileSize + tileSize / 2;
+
+        if (g.r === pac.r && g.c === pac.c) {
+          if (ghostsVulnerable) {
+            g.eaten = true;
+            pacScore += 100;
+            document.getElementById('pacScore').textContent = pacScore;
+            
+            let elapsedTime = (Date.now() - heartVulnerableStartTime);
+            let remainingTime = vulnerabilityDuration - elapsedTime;
+            if (remainingTime < 300) remainingTime = 300;
+
+            g.respawnTimeout = setTimeout(() => {
+              if (!pacGameActive) return;
+              g.r = rows - 2;
+              g.c = cols - 2;
+              g.x = g.c * tileSize + tileSize/2;
+              g.y = g.r * tileSize + tileSize/2;
+              g.eaten = false;
+              g.color = g.origColor;
+            }, remainingTime);
+
+          } else {
+            clearInterval(pacInterval);
+            clearInterval(fruitTimer);
+            clearInterval(heartTimer);
+            if (ghostVulnerableTimer) clearTimeout(ghostVulnerableTimer);
+            ghosts.forEach(g => { if (g.respawnTimeout) clearTimeout(g.respawnTimeout); });
+            pacGameActive = false;
+            document.getElementById('pacStatus').textContent = '💥 Caught by a ghost! Game Over.';
+          }
+        }
+      });
+
+      drawMaze();
+
+      pacCtx.fillStyle = '#d2daab';
+      pacDots.forEach(dot => {
+        if (dot.active) {
+          pacCtx.beginPath();
+          pacCtx.arc(dot.c * tileSize + tileSize/2, dot.r * tileSize + tileSize/2, 2.5, 0, Math.PI * 2);
+          pacCtx.fill();
+        }
+      });
+
+      if (currentFruit) {
+        pacCtx.font = '14px sans-serif';
+        pacCtx.textAlign = 'center';
+        pacCtx.textBaseline = 'middle';
+        pacCtx.fillText(currentFruit.type, currentFruit.c * tileSize + tileSize/2, currentFruit.r * tileSize + tileSize/2);
+      }
+
+      if (currentHeart) {
+        pacCtx.font = '14px sans-serif';
+        pacCtx.textAlign = 'center';
+        pacCtx.textBaseline = 'middle';
+        pacCtx.fillText(currentHeart.type, currentHeart.c * tileSize + tileSize/2, currentHeart.r * tileSize + tileSize/2);
+      }
+
+      drawPacman(pac.x, pac.y, pac.dx, pac.dy);
+      ghosts.forEach(g => drawGhost(g.x, g.y, g.color, g.eaten));
+    }
+  </script>
+</body>
+</html>

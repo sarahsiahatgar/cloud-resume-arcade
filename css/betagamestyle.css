@@ -1,0 +1,268 @@
+.page-title {
+  text-align: center;
+  margin: 10px 20px 30px 20px;
+}
+
+.page-title h1 {
+  font-size: 2.2rem;
+  font-weight: 600;
+  color: #1e2319;
+  margin-bottom: 8px;
+}
+
+.page-title p {
+  font-size: 1.05rem;
+  opacity: 0.85;
+}
+
+.games-container {
+  display: flex;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 30px;
+  max-width: 800px;
+  width: 90%;
+  margin: 0 auto 60px auto;
+}
+
+.game-card {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+}
+
+.game-card.viking-card {
+  max-width: 700px;
+}
+
+.game-header {
+  background-color: #f7f9ee;
+  padding: 14px 22px;
+  border-radius: 12px 12px 0 0;
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 52px;
+}
+
+.game-body {
+  background-color: #2c3325;
+  border-radius: 0 0 20px 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 520px;
+  color: #ffffff;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.game-card.viking-card .game-body {
+  min-height: 550px;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 12px;
+}
+
+.game-status {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #b5be8a;
+  min-height: 24px;
+  text-align: center;
+}
+
+.action-btn {
+  background-color: #b5be8a;
+  color: #1e2319;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 5px;
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background-color: #d2daab;
+}
+
+.control-btn {
+  background-color: #3b4432;
+  color: #b5be8a;
+  border: 2px solid #b5be8a;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+}
+
+.control-btn:active {
+  background-color: #b5be8a;
+  color: #1e2319;
+}
+
+.pac-action-btn {
+  flex: 1;
+  background-color: #b5be8a;
+  color: #1e2319;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 5px;
+  text-align: center;
+  transition: background 0.2s, color 0.2s;
+}
+
+.pac-action-btn:hover {
+  background-color: #d2daab;
+}
+
+.leaderboard-container {
+  margin-top: 10px;
+  max-height: 140px;
+  overflow-y: auto;
+  width: 100%;
+  font-size: 0.75rem;
+  background: #5C673C;
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.leaderboard-container h3 {
+  color: #ffffff;
+  text-align: center;
+  font-size: 0.9rem;
+  margin: 0 0 4px 0;
+}
+
+#leaderboardList {
+  background: transparent;
+  color: #ffffff;
+  padding: 0;
+  border-radius: 4px;
+  list-style: none;
+  margin: 0;
+}
+
+.game-card.viking-card #vikingCanvas {
+  display: block;
+  margin: 0 auto;
+}
+
+.ios-picker-container {
+  position: relative;
+  width: 75px;
+  height: 105px;
+  overflow: hidden;
+  background: #1e2319;
+  border-radius: 8px;
+  border: 1px solid #b5be8a;
+  display: flex;
+  justify-content: center;
+}
+
+.ios-picker-scroll {
+  width: 100%;
+  height: 100%;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.ios-picker-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.ios-picker-item {
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  font-size: 0.95rem;
+  color: #b5be8a;
+  font-weight: 600;
+}
+
+.ios-picker-highlight {
+  position: absolute;
+  top: 35px;
+  left: 0;
+  width: 100%;
+  height: 35px;
+  border-top: 1px solid #b5be8a;
+  border-bottom: 1px solid #b5be8a;
+  pointer-events: none;
+  background: rgba(181, 190, 138, 0.12);
+}
+
+#angleInput, #powerInput {
+  height: 34px;
+  font-size: 0.9rem !important;
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    margin: 10px 15px 25px 15px;
+  }
+
+  .page-title h1 {
+    font-size: 1.7rem;
+  }
+
+  .page-title p {
+    font-size: 0.95rem;
+  }
+
+  .games-container {
+    width: 100%;
+    padding: 0 15px;
+    gap: 25px;
+  }
+
+  .game-card,
+  .game-card.viking-card {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .game-body,
+  .game-card.viking-card .game-body {
+    min-height: auto;
+    padding: 15px 10px;
+  }
+
+  canvas#vikingCanvas {
+    width: 100% !important;
+    max-width: 520px;
+    height: auto !important;
+  }
+
+  .game-card.viking-card .action-btn {
+    font-size: 0.65rem !important;
+    padding: 8px 6px;
+    flex: 1 1 30%;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-card.viking-card .action-btn {
+    flex: 1 1 45%;
+  }
+}
+
+.control-btn, .pac-action-btn, .action-btn, canvas {
+  touch-action: manipulation;
+}

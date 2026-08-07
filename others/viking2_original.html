@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viking II - Sarah's AWS Cloud Arcade</title>
+  <style>
+    /* CSS RESET & FONTS */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #2c3325; 
+      color: #2b331f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; 
+    }
+
+    /* TOP BAR NAVIGATION */
+    header {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 25px 40px;
+    }
+
+    .nav-links a {
+      color: #2b331f;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-right: 20px;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+      
+      /* Unified tab sizing */
+      display: inline-block;
+      min-width: 110px;        
+      text-align: center;     
+      padding: 8px 12px;       
+      box-sizing: border-box;
+    }
+
+    .nav-links a:hover, .nav-links a.active {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    /* GAMES CONTAINER */
+    .games-container {
+      display: flex;
+      gap: 35px;
+      max-width: 1100px;
+      width: 90%;
+      margin-bottom: 60px;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    .game-card {
+      flex: 1;
+      min-width: 680px;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .game-header {
+      background-color: #f7f9ee;
+      padding: 14px 22px;
+      border-radius: 12px 12px 0 0;
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 52px;
+    }
+
+    .game-body {
+      background-color: #2c3325;
+      border-radius: 0 0 20px 20px;
+      padding: 25px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between; 
+      min-height: 680px; 
+      color: #ffffff;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+
+    canvas#gameCanvas {
+      background-color: #85a9c9;
+      border: 3px solid #b5be8a;
+      border-radius: 12px;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+      cursor: crosshair;
+      display: block;
+      margin: 10px auto;
+      image-rendering: pixelated;
+    }
+
+    .game-status {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #b5be8a;
+      min-height: 24px;
+      text-align: center;
+    }
+
+    .action-btn {
+      background-color: #b5be8a;
+      color: #1e2319;
+      border: none;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .action-btn:hover {
+      background-color: #d2daab;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      font-size: 1rem;
+      border: 2px solid #b5be8a;
+      background: #1e2319;
+      color: #fff;
+      border-radius: 6px;
+      margin-right: 10px;
+    }
+
+    .leaderboard-box {
+      width: 100%;
+      margin-top: 15px;
+      text-align: left;
+      background: #1e2319;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #3b4432;
+      font-size: 0.9rem;
+    }
+
+    .controls-hint {
+      font-size: 0.85rem;
+      opacity: 0.85;
+      margin-bottom: 10px;
+      line-height: 1.4;
+      text-align: center;
+      color: #d2daab;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- GAME CONTAINER -->
+  <main class="games-container">
+    <div class="game-card">
+      <div class="game-body">
+        
+        <!-- LINE 1: Power-ups legend/icons -->
+        <div class="powerups-row" style="display: flex; justify-content: center; gap: 15px; font-size: 0.85rem; margin-bottom: 6px;">
+          <span>🟢 <strong>Health</strong></span>
+          <span>🔴 <strong>Fire Shield</strong></span>
+          <span>⚔️ <strong>5-Shot Spread</strong></span>
+        </div>
+
+        <!-- LINE 2: Hold click / touch instructions -->
+        <p class="controls-hint" style="margin-bottom: 6px; text-align: center;">
+          <strong>Hold click / touch</strong> to continuously shoot arrows!
+        </p>
+
+        <!-- LINE 3: Wave, HP, and Score with separate isolated IDs -->
+        <div style="margin-bottom: 6px; text-align: center; font-size: 0.95rem;">
+          <span id="waveDisplay">Wave: 1</span> | 
+          <span id="hpDisplay">Longhouse HP: 100</span> | 
+          <span style="font-weight: bold;">Score: <span id="scoreDisplay">0</span></span>
+        </div>
+
+        <!-- LINE 4: Fire Shield & 5-Shot active countdown timers strictly below -->
+        <div id="powerupStatus" style="font-size: 0.85rem; color: #e0a96d; text-align: center; min-height: 18px; margin-bottom: 6px;">
+        </div>
+        
+        <canvas id="gameCanvas" width="700" height="340"></canvas>
+
+        <div id="gameOverScreen" style="display: none; text-align: center;">
+          <p id="gameOverMsg" style="margin-bottom: 10px; color: #ff6b6b; font-weight: bold;">The Longhouse Has Fallen!</p>
+          <input type="text" id="playerName" placeholder="Your Name" maxlength="15">
+          <button class="action-btn" onclick="submitScore()">Save Score</button>
+          <button class="action-btn" onclick="restartGame()" style="margin-left: 10px;">Play Again</button>
+        </div>
+
+        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+          <button class="action-btn" id="startBtn" onclick="startGame()">Start Defense</button>
+          <button class="action-btn" id="pauseBtn" onclick="togglePause()" style="display: none; background-color: #e0a96d;">Pause</button>
+        </div>
+
+        <div class="leaderboard-box">
+          <strong style="color: #b5be8a;">🏆 Cloud Leaderboard (DynamoDB):</strong>
+          <ol id="leaderboardList" style="margin: 5px 0 0 20px; padding: 0;">
+            <li>Loading cloud scores...</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const API_URL = "https://ist6lo7av7.execute-api.us-east-1.amazonaws.com/";
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let gameInterval;
+    let score = 0;
+    let wave = 1;
+    let longhouseHp = 100;
+    let isGameOver = false;
+    let isPaused = false;
+    let cloudHighScore = 0;
+
+    let enemies = [];
+    let powerUps = [];
+    let projectiles = [];
+
+    let isShooting = false;
+    let targetX = 0;
+    let targetY = 0;
+    let shootTimer = 0;
+    
+    let shieldActive = false;
+    let shieldTimer = 0;
+    let multiShotActive = false;
+    let multiShotTimer = 0;
+
+    const defender = {
+      x: 35,
+      y: canvas.height / 2
+    };
+
+    function startGame() {
+      document.getElementById("startBtn").style.display = "none";
+      document.getElementById("pauseBtn").style.display = "inline-block";
+      document.getElementById("gameOverScreen").style.display = "none";
+      score = 0;
+      wave = 1;
+      longhouseHp = 100;
+      isGameOver = false;
+      isPaused = false;
+      enemies = [];
+      powerUps = [];
+      projectiles = [];
+      isShooting = false;
+      shootTimer = 0;
+      shieldActive = false;
+      shieldTimer = 0;
+      multiShotActive = false;
+      multiShotTimer = 0;
+
+      spawnWave();
+      if (gameInterval) clearInterval(gameInterval);
+      gameInterval = setInterval(updateGame, 1000 / 60);
+    }
+
+    function togglePause() {
+      if (isGameOver) return;
+      isPaused = !isPaused;
+      const pauseBtn = document.getElementById("pauseBtn");
+      if (isPaused) {
+        pauseBtn.textContent = "Resume";
+        pauseBtn.style.backgroundColor = "#85a9c9";
+        ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "24px 'Segoe UI', sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText("GAME PAUSED", canvas.width / 2, canvas.height / 2);
+      } else {
+        pauseBtn.textContent = "Pause";
+        pauseBtn.style.backgroundColor = "#e0a96d";
+      }
+    }
+
+    function spawnWave() {
+      let enemyCount = 3 + wave * 2;
+      for (let i = 0; i < enemyCount; i++) {
+        let isHeavy = Math.random() < 0.08; 
+
+        enemies.push({
+          x: canvas.width + Math.random() * 300 + (i * 60),
+          y: Math.random() * (canvas.height - 110) + 40,
+          width: isHeavy ? 36 : 24,
+          height: isHeavy ? 56 : 40,
+          speed: isHeavy ? 0.8 + (wave * 0.2) : 1.2 + (wave * 0.3),
+          hp: isHeavy ? 4 : 1,
+          maxHp: isHeavy ? 4 : 1,
+          isHeavy: isHeavy
+        });
+      }
+
+      let types = [];
+      if (longhouseHp < 100) types.push('health');
+      types.push('shield', 'multishot');
+
+      if (Math.random() < 0.75 && types.length > 0) {
+        let chosenType = types[Math.floor(Math.random() * types.length)];
+        powerUps.push({
+          x: canvas.width + 100,
+          y: Math.random() * (canvas.height - 80) + 30,
+          width: 26,
+          height: 26,
+          speed: 1.5,
+          type: chosenType
+        });
+      }
+    }
+
+    function getCanvasCoordinates(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    canvas.addEventListener("mousedown", function(e) {
+      if (isGameOver || isPaused) return;
+      isShooting = true;
+      const coords = getCanvasCoordinates(e);
+      targetX = coords.x;
+      targetY = coords.y;
+    });
+
+    window.addEventListener("mousemove", function(e) {
+      if (!isShooting || isGameOver || isPaused) return;
+      const coords = getCanvasCoordinates(e);
+      targetX = coords.x;
+      targetY = coords.y;
+    });
+
+    window.addEventListener("mouseup", function() {
+      isShooting = false;
+    });
+
+    canvas.addEventListener("touchstart", function(e) {
+      if (isGameOver || isPaused) return;
+      e.preventDefault();
+      isShooting = true;
+      const coords = getCanvasCoordinates(e);
+      targetX = coords.x;
+      targetY = coords.y;
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", function(e) {
+      if (!isShooting || isGameOver || isPaused) return;
+      e.preventDefault();
+      const coords = getCanvasCoordinates(e);
+      targetX = coords.x;
+      targetY = coords.y;
+    }, { passive: false });
+
+    window.addEventListener("touchend", function() {
+      isShooting = false;
+    });
+
+    function fireArrow(angleOffset = 0) {
+      const angle = Math.atan2(targetY - defender.y, targetX - defender.x) + angleOffset;
+      const speed = 9;
+
+      projectiles.push({
+        x: defender.x,
+        y: defender.y,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        angle: angle,
+        length: 22,
+        width: 4
+      });
+    }
+
+    function drawMinecraftHuman(x, y, w, h, isHeavy, isPlayer = false) {
+      let headSize = w * 0.75;
+      let headX = x + (w - headSize) / 2;
+      let headY = y;
+      
+      let torsoW = w * 0.8;
+      let torsoH = h * 0.45;
+      let torsoX = x + (w - torsoW) / 2;
+      let torsoY = headY + headSize;
+
+      let limbW = w * 0.28;
+      let limbH = h * 0.35;
+      let legY = torsoY + torsoH;
+
+      if (isPlayer) {
+        ctx.fillStyle = "#2c3e50";
+        ctx.fillRect(torsoX + 2, legY, limbW - 1, limbH);
+        ctx.fillRect(torsoX + torsoW - limbW - 1, legY, limbW - 1, limbH);
+
+        ctx.fillStyle = "#c0392b";
+        ctx.fillRect(torsoX, torsoY, torsoW, torsoH);
+        ctx.fillStyle = "#f39c12";
+        ctx.fillRect(torsoX, torsoY + torsoH - 4, torsoW, 4);
+
+        ctx.fillStyle = "#c0392b";
+        ctx.fillRect(torsoX - limbW + 2, torsoY, limbW - 2, torsoH - 4);
+        ctx.fillRect(torsoX + torsoW - 2, torsoY, limbW - 2, torsoH - 4);
+
+        ctx.fillStyle = "#f5cba7";
+        ctx.fillRect(headX, headY, headSize, headSize);
+        ctx.fillStyle = "#4a3525";
+        ctx.fillRect(headX, headY + headSize * 0.5, headSize, headSize * 0.5);
+
+        ctx.fillStyle = "#34495e";
+        ctx.fillRect(headX - 2, headY - 4, headSize + 4, headSize * 0.5);
+        ctx.fillStyle = "#ecf0f1";
+        ctx.fillRect(headX - 6, headY - 8, 5, 5);
+        ctx.fillRect(headX + headSize + 1, headY - 8, 5, 5);
+      } else if (isHeavy) {
+        ctx.fillStyle = "#222";
+        ctx.fillRect(x - 4, y - 14, w + 8, 5);
+        ctx.fillStyle = "#e74c3c";
+        ctx.fillRect(x - 3, y - 13, (w + 6) * (this.hp / this.maxHp), 3);
+
+        ctx.fillStyle = "#273746";
+        ctx.fillRect(torsoX + 2, legY, limbW - 1, limbH);
+        ctx.fillRect(torsoX + torsoW - limbW - 1, legY, limbW - 1, limbH);
+
+        ctx.fillStyle = "#78281f";
+        ctx.fillRect(torsoX, torsoY, torsoW, torsoH);
+        ctx.fillStyle = "#d4ac0d";
+        ctx.fillRect(torsoX + 3, torsoY + 4, torsoW - 6, 4);
+
+        ctx.fillStyle = "#78281f";
+        ctx.fillRect(torsoX - limbW + 2, torsoY, limbW - 2, torsoH - 4);
+        ctx.fillRect(torsoX + torsoW - 2, torsoY, limbW - 2, torsoH - 4);
+
+        ctx.fillStyle = "#f5cba7";
+        ctx.fillRect(headX, headY, headSize, headSize);
+        ctx.fillStyle = "#17202a";
+        ctx.fillRect(headX + 4, headY + 5, 3, 3);
+        ctx.fillRect(headX + headSize - 7, headY + 5, 3, 3);
+
+        ctx.fillStyle = "#b7950b";
+        ctx.fillRect(headX - 3, headY - 5, headSize + 6, headSize * 0.55);
+        ctx.fillStyle = "#f1c40f";
+        ctx.fillRect(headX - 8, headY - 10, 6, 7);
+        ctx.fillRect(headX + headSize + 2, headY - 10, 6, 7);
+      } else {
+        ctx.fillStyle = "#3e2723";
+        ctx.fillRect(torsoX + 2, legY, limbW - 1, limbH);
+        ctx.fillRect(torsoX + torsoW - limbW - 1, legY, limbW - 1, limbH);
+
+        ctx.fillStyle = "#795548";
+        ctx.fillRect(torsoX, torsoY, torsoW, torsoH);
+        ctx.fillStyle = "#4e342e";
+        ctx.fillRect(torsoX, torsoY + torsoH - 4, torsoW, 3);
+
+        ctx.fillStyle = "#795548";
+        ctx.fillRect(torsoX - limbW + 2, torsoY, limbW - 2, torsoH - 4);
+        ctx.fillRect(torsoX + torsoW - 2, torsoY, limbW - 2, torsoH - 4);
+
+        ctx.fillStyle = "#f5cba7";
+        ctx.fillRect(headX, headY, headSize, headSize);
+        ctx.fillStyle = "#3e2723";
+        ctx.fillRect(headX + 2, headY + headSize * 0.6, headSize - 4, headSize * 0.4);
+
+        ctx.fillStyle = "#5d4037";
+        ctx.fillRect(headX - 2, headY - 4, headSize + 4, headSize * 0.5);
+        ctx.fillStyle = "#ecf0f1";
+        ctx.fillRect(headX - 5, headY - 7, 4, 4);
+        ctx.fillRect(headX + headSize + 1, headY - 7, 4, 4);
+      }
+    }
+
+    function updateGame() {
+      if (isPaused || isGameOver) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (isShooting) {
+        shootTimer++;
+        if (shootTimer >= 12) {
+          shootTimer = 0;
+          if (multiShotActive) {
+            fireArrow(-0.35);
+            fireArrow(-0.17);
+            fireArrow(0);
+            fireArrow(0.17);
+            fireArrow(0.35);
+          } else {
+            fireArrow(0);
+          }
+        }
+      }
+
+      if (shieldActive) {
+        shieldTimer--;
+        if (shieldTimer <= 0) shieldActive = false;
+      }
+      if (multiShotActive) {
+        multiShotTimer--;
+        if (multiShotTimer <= 0) multiShotActive = false;
+      }
+
+      if (shieldActive) {
+        ctx.fillStyle = "#b91c1c";
+        ctx.fillRect(0, 0, 50, canvas.height);
+        ctx.fillStyle = "#f97316";
+        ctx.fillRect(40, 0, 16, canvas.height);
+
+        let time = Date.now() / 80;
+        ctx.fillStyle = "#fbbf24";
+        for (let fy = 0; fy < canvas.height; fy += 20) {
+          let flameHeight = 12 + Math.sin(time + fy) * 6;
+          ctx.beginPath();
+          ctx.moveTo(50, fy);
+          ctx.lineTo(50 + flameHeight, fy + 10);
+          ctx.lineTo(50, fy + 20);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = "#6b4423";
+        ctx.fillRect(0, 0, 50, canvas.height);
+        ctx.fillStyle = "#a06b38";
+        ctx.fillRect(40, 0, 10, canvas.height);
+      }
+
+      drawMinecraftHuman(defender.x - 12, defender.y - 24, 24, 48, false, true);
+
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        let p = projectiles[i];
+        p.x += p.dx;
+        p.y += p.dy;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        
+        ctx.fillStyle = "#8d6e63";
+        ctx.fillRect(-p.length / 2, -p.width / 2, p.length, p.width);
+
+        ctx.fillStyle = "#bdc3c7";
+        ctx.beginPath();
+        ctx.moveTo(p.length / 2, -p.width * 1.5);
+        ctx.lineTo(p.length / 2 + 8, 0);
+        ctx.lineTo(p.length / 2, p.width * 1.5);
+        ctx.fill();
+
+        ctx.fillStyle = "#e74c3c";
+        ctx.beginPath();
+        ctx.moveTo(-p.length / 2, 0);
+        ctx.lineTo(-p.length / 2 - 6, -6);
+        ctx.lineTo(-p.length / 2 - 3, 0);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-p.length / 2, 0);
+        ctx.lineTo(-p.length / 2 - 6, 6);
+        ctx.lineTo(-p.length / 2 - 3, 0);
+        ctx.fill();
+
+        ctx.restore();
+
+        if (p.x > canvas.width || p.x < 0 || p.y > canvas.height || p.y < 0) {
+          projectiles.splice(i, 1);
+        }
+      }
+
+      for (let i = powerUps.length - 1; i >= 0; i--) {
+        let pu = powerUps[i];
+        pu.x -= pu.speed;
+
+        let cx = pu.x + pu.width / 2;
+        let cy = pu.y + pu.height / 2;
+
+        if (pu.type === 'health') {
+          ctx.fillStyle = "#27ae60";
+          ctx.fillRect(pu.x, pu.y, pu.width, pu.height);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(pu.x + pu.width * 0.35, pu.y + 4, pu.width * 0.3, pu.height - 8);
+          ctx.fillRect(pu.x + 4, pu.y + pu.height * 0.35, pu.width - 8, pu.height * 0.3);
+        } else if (pu.type === 'shield') {
+          ctx.fillStyle = "#4a235a";
+          ctx.fillRect(pu.x, pu.y, pu.width, pu.height);
+
+          ctx.fillStyle = "#e74c3c";
+          ctx.beginPath();
+          ctx.moveTo(cx, pu.y + 3);
+          ctx.lineTo(pu.x + pu.width - 3, pu.y + 8);
+          ctx.lineTo(cx, pu.y + pu.height - 3);
+          ctx.lineTo(pu.x + 3, pu.y + 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = "#f1c40f";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else if (pu.type === 'multishot') {
+          ctx.fillStyle = "#4a235a";
+          ctx.fillRect(pu.x, pu.y, pu.width, pu.height);
+
+          ctx.strokeStyle = "#bdc3c7";
+          ctx.lineWidth = 2.5;
+          
+          ctx.beginPath();
+          ctx.moveTo(cx - 7, cy - 7);
+          ctx.lineTo(cx + 7, cy + 7);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(cx - 7, cy + 7);
+          ctx.lineTo(cx + 7, cy - 7);
+          ctx.stroke();
+
+          ctx.fillStyle = "#f1c40f";
+          ctx.fillRect(cx - 2, cy - 2, 4, 4);
+        }
+
+        if (pu.x <= 50) {
+          powerUps.splice(i, 1);
+          continue;
+        }
+
+        for (let j = projectiles.length - 1; j >= 0; j--) {
+          let p = projectiles[j];
+          if (
+            p.x > pu.x &&
+            p.x < pu.x + pu.width &&
+            p.y > pu.y &&
+            p.y < pu.y + pu.height
+          ) {
+            if (pu.type === 'health') {
+              longhouseHp = Math.min(100, longhouseHp + 20);
+            } else if (pu.type === 'shield') {
+              shieldActive = true;
+              shieldTimer = 600;
+            } else if (pu.type === 'multishot') {
+              multiShotActive = true;
+              multiShotTimer = 300;
+            }
+            powerUps.splice(i, 1);
+            projectiles.splice(j, 1);
+            score += 50;
+            break;
+          }
+        }
+      }
+
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        let enemy = enemies[i];
+        enemy.x -= enemy.speed;
+
+        drawMinecraftHuman.call(enemy, enemy.x, enemy.y, enemy.width, enemy.height, enemy.isHeavy, false);
+
+        if (enemy.x <= 50) {
+          if (shieldActive) {
+            score += 15;
+          } else {
+            longhouseHp -= enemy.isHeavy ? 25 : 10;
+            if (longhouseHp <= 0) {
+              longhouseHp = 0;
+              endGame();
+            }
+          }
+          enemies.splice(i, 1);
+          continue;
+        }
+
+        for (let j = projectiles.length - 1; j >= 0; j--) {
+          let p = projectiles[j];
+          if (
+            p.x > enemy.x &&
+            p.x < enemy.x + enemy.width &&
+            p.y > enemy.y &&
+            p.y < enemy.y + enemy.height
+          ) {
+            enemy.hp--;
+            projectiles.splice(j, 1);
+
+            if (enemy.hp <= 0) {
+              enemies.splice(i, 1);
+              score += enemy.isHeavy ? 100 : 25;
+            }
+            break;
+          }
+        }
+      }
+
+      if (enemies.length === 0 && !isGameOver) {
+        wave++;
+        score += 100 * wave;
+        spawnWave();
+      }
+
+      // Update HTML elements cleanly
+      document.getElementById("scoreDisplay").textContent = score;
+      document.getElementById("waveDisplay").textContent = `Wave: ${wave}`;
+      document.getElementById("hpDisplay").textContent = `Longhouse HP: ${longhouseHp}`;
+
+      let powerupText = "";
+      if (shieldActive) powerupText += `🔥 FIRE SHIELD: ${Math.ceil(shieldTimer/60)}s `;
+      if (multiShotActive) powerupText += `⚔️ 5-SHOT SPREAD: ${Math.ceil(multiShotTimer/60)}s`;
+      document.getElementById("powerupStatus").textContent = powerupText;
+    }
+
+    function endGame() {
+      isGameOver = true;
+      const msgEl = document.getElementById("gameOverMsg");
+      
+      if (score > cloudHighScore && cloudHighScore > 0) {
+        msgEl.innerHTML = `🎉 NEW CLOUD HIGH SCORE! (${score} pts)!`;
+      } else {
+        msgEl.innerHTML = `The Longhouse Has Fallen! Final Score: ${score}`;
+      }
+
+      document.getElementById("gameOverScreen").style.display = "block";
+      document.getElementById("pauseBtn").style.display = "none";
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    async function submitScore() {
+      const nameInput = document.getElementById("playerName").value.trim() || "Anonymous";
+      const finalScore = score;
+
+      try {
+        const response = await fetch(`${API_URL}?action=submit_score&game=viking2&name=${encodeURIComponent(nameInput)}&score=${finalScore}`);
+        const data = await response.json();
+        alert(data.message || "Score submitted successfully!");
+        document.getElementById("gameOverScreen").style.display = "none";
+        document.getElementById("startBtn").style.display = "inline-block";
+        fetchLeaderboard();
+      } catch (err) {
+        console.error("Error submitting score:", err);
+        alert("Failed to save score. Check your network or API connection.");
+      }
+    }
+
+    async function fetchLeaderboard() {
+      try {
+        const response = await fetch(`${API_URL}?action=get_leaderboard&game=viking2`);
+        const items = await response.json();
+        const listEl = document.getElementById("leaderboardList");
+        listEl.innerHTML = "";
+        if (!items || items.length === 0) {
+          listEl.innerHTML = "<li>No high scores yet. Be the first!</li>";
+          cloudHighScore = 0;
+          return;
+        }
+        
+        cloudHighScore = parseInt(items[0].score) || 0;
+
+        items.forEach((item, idx) => {
+          const li = document.createElement("li");
+          li.textContent = `${item.playerName || item.name}: ${item.score} pts`;
+          listEl.appendChild(li);
+        });
+      } catch (err) {
+        console.error("Error loading leaderboard:", err);
+        document.getElementById("leaderboardList").innerHTML = "<li>Could not load cloud leaderboard.</li>";
+      }
+    }
+
+    fetchLeaderboard();
+  </script>
+</body>
+</html>

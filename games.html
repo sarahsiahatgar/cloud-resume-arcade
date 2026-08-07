@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>More Games | Sara's AWS Arcade</title>
+  <link rel="icon" href="logo.jpg">
+  
+  <!-- Stylesheets -->
+  <link rel="stylesheet" href="css/global.css">
+  <link rel="stylesheet" href="css/gamestyle.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <header>
+    <button class="hamburger" id="hamburgerBtn" aria-label="Toggle navigation">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <nav class="nav-links" id="navLinks">
+	  <!-- Close Button for Mobile -->
+	  <button class="close-menu-btn" id="closeMenuBtn" aria-label="Close navigation">&times;</button>
+	  
+	  <a href="index.html">Home</a>
+	  <a href="games.html">More Games</a>
+	  <a href="beta-games.html">Beta! Games</a>
+	  <a href="about.html">About Me</a>
+	  <a href="https://www.linkedin.com/in/sara-siahatgar-b6a0151b5/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+	</nav>
+
+    <div style="width: 100px;"></div>
+  </header>
+
+  <!-- Page Title -->
+  <div class="page-title">
+    <h1>🎮 More Arcade Games</h1>
+    <p>Test your skills with these mini-games!</p>
+  </div>
+
+  <!-- Games Container -->
+  <main class="games-container">
+
+    <!-- Game 1: AWS Memory Match -->
+    <div class="game-card">
+      <div class="game-header">
+        <span>AWS Memory Match</span>
+        <span style="font-size: 0.85rem; font-weight: normal;">Matches: <span id="memScore">0</span>/8</span>
+      </div>
+      <div class="game-body">
+        <div class="game-status" id="memStatus">Flip cards to match AWS tech!</div>
+        <div class="memory-grid" id="memoryBoard"></div>
+        <button class="action-btn" id="restartMemBtn">Restart Game</button>
+      </div>
+    </div>
+
+    <!-- Game 2: Space Invaders -->
+    <div class="game-card">
+      <div class="game-header">
+        <span>Space Invaders</span>
+        <span style="font-size: 0.85rem; font-weight: normal;">Score: <span id="invaderScore">0</span></span>
+      </div>
+      <div class="game-body">
+        <div class="game-status" id="invaderStatus">Press Start to Play!</div>
+        <canvas id="invadersCanvas" width="280" height="200"></canvas>
+        
+        <!-- On-Screen Touch Controls for Mobile -->
+        <div class="touch-controls">
+          <button class="control-btn" id="invaderLeftBtn">◄</button>
+          <button class="control-btn" id="invaderFireBtn">🎯</button>
+          <button class="control-btn" id="invaderRightBtn">►</button>
+        </div>
+
+        <button class="action-btn" id="startInvadersBtn">Start / Restart</button>
+      </div>
+    </div>
+
+    <!-- Game 3: Connect Four -->
+    <div class="game-card">
+      <div class="game-header">
+        <span>Connect Four</span>
+        <span style="font-size: 0.85rem; font-weight: normal;">Wins: <span id="c4Score">0</span></span>
+      </div>
+      <div class="game-body">
+        <div class="game-status" id="c4Status">Click any column to start!</div>
+        <div class="c4-board" id="c4Board"></div>
+        <button class="action-btn" id="restartC4Btn">Restart Match</button>
+      </div>
+    </div>
+<!--
+   Suggestion Box Card
+    <div class="coming-soon-card">
+      <div style="font-size: 1.8rem; margin-bottom: 6px;">🛠️</div>
+      <h3>New Games Under Construction!</h3>
+      <p style="margin-bottom: 10px;">Have a game you'd like to see here?</p>
+      
+      <div class="suggestion-form">
+        <input type="text" id="gameSuggestion" placeholder="e.g., Flappy Bird, Pac-Man..." maxlength="50">
+        <button type="button" id="submitSuggestionBtn">Suggest</button>
+      </div>
+      <div id="suggestionMsg" class="suggestion-status"></div>
+    </div>
+-->
+	<!-- Suggestion Box Card -->
+    <div class="coming-soon-card">
+      <div style="font-size: 1.8rem; margin-bottom: 6px;">🚧</div>
+      <h3>Work Bench is Fully Packed!</h3>
+      <p style="margin-bottom: 7px;">We're currently drowning in many game ideas! Please enjoy the existing games!</p>
+      
+      <div class="suggestion-form">
+        <input type="text" id="gameSuggestion" placeholder="Currently closed..." maxlength="50" disabled>
+        <button type="button" id="submitSuggestionBtn" disabled style="opacity: 0.6; cursor: not-allowed;">Closed</button>
+      </div>
+      <div id="suggestionMsg" class="suggestion-status" style="color: #e74c3c;">The dev desk is piled high! Check back later.</div>
+	  <!-- Button to redirect to Beta Games -->
+		<div style="text-align: center; margin: 15px 0 0 0;">
+		  <a href="beta-games.html" class="beta-redirect-btn">
+			🧪 Check out Beta! Games
+		  </a>
+		</div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <a href="index.html">
+      <img src="logo.jpg" alt="Sarah Portfolio Logo">
+    </a>
+    <div>Copyright © 2026 Sarah Siahatgar. All rights reserved.</div>
+  </footer>
+
+  <!-- Scripts -->
+  <script type="module">
+    import { initMemoryGame } from './js/memory.js';
+    import { initSpaceInvaders } from './js/spaceinvaders.js';
+    import { initConnectFour } from './js/connectfour.js';
+    import { initSuggestionBox } from './js/suggestion.js';
+    import { initHamburger } from './js/hamburger.js';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+      initMemoryGame();
+      initSpaceInvaders();
+      initConnectFour();
+      initSuggestionBox();
+      initHamburger();
+    });
+  </script>
+</body>
+</html>

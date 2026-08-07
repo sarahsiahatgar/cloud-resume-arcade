@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Viking II - Fjord Defense</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f6f0;
+      color: #2b331f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 20px;
+      touch-action: none;
+    }
+
+    header {
+      width: 100%;
+      max-width: 1200px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 25px 40px;
+    }
+
+    .nav-links a {
+      color: #2b331f;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      margin-right: 20px;
+      opacity: 0.8;
+      transition: opacity 0.2s;
+      display: inline-block;
+      min-width: 110px;
+      text-align: center;
+      padding: 8px 12px;
+      box-sizing: border-box;
+    }
+
+    .nav-links a.active, .nav-links a:hover {
+      opacity: 1;
+      text-decoration: underline;
+    }
+
+    .game-container {
+      text-align: center;
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      max-width: 800px;
+      width: 100%;
+    }
+
+    canvas {
+      background: #85a9c9; /* Bright and clear daytime fjord sky / water tone */
+      border: 4px solid #2b331f;
+      border-radius: 8px;
+      display: block;
+      margin: 20px auto;
+      image-rendering: pixelated;
+      cursor: crosshair;
+    }
+
+    .controls-hint {
+      font-size: 0.85rem;
+      opacity: 0.7;
+      margin-bottom: 15px;
+      line-height: 1.4;
+    }
+
+    button {
+      background-color: #2b331f;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background-color: #4a5738;
+    }
+
+    input[type="text"] {
+      padding: 8px;
+      font-size: 1rem;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      margin-right: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-title" style="font-size: 1.2rem; font-weight: 600; color: #2b331f;">Viking II Adventure</div>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="games.html">Games</a>
+      <a href="viking2.html" class="active">Viking II</a>
+      <a href="about.html">About</a>
+    </div>
+  </header>
+
+  <div class="game-container">
+    <h1>Viking II: Fjord Defense</h1>
+    <p class="controls-hint">
+      <strong>Hold click / touch</strong> to continuously shoot feathered bow arrows!<br>
+      Shoot 🟢 <strong>Green Plus</strong> for Health | 🔴 <strong>Red Shield</strong> for 10s Fire Wall Immunity | ⚔️ <strong>Crossing Swords</strong> for 5-Arrow Spread.
+    </p>
+    
+    <canvas id="gameCanvas" width="700" height="350"></canvas>
+    
+    <div style="display: flex; justify-content: space-around; font-size: 1.1rem; font-weight: bold; margin-bottom: 15px;">
+      <span id="waveDisplay">Wave: 1</span>
+      <span id="scoreDisplay">Score: 0</span>
+      <span id="healthDisplay" style="color: #b33939;">Longhouse HP: 100</span>
+    </div>
+
+    <div id="gameOverScreen" style="display: none;">
+      <h3>The Longhouse Has Fallen!</h3>
+      <p>Enter your name to log your legacy on the global leaderboard:</p>
+      <input type="text" id="playerName" placeholder="Your Name" maxlength="15">
+      <button onclick="submitScore()">Save Score</button>
+      <br><br>
+      <button onclick="restartGame()">Defend Again</button>
+    </div>
+    
+    <button id="startBtn" onclick="startGame()">Start Defense</button>
+  </div>
+
+  <script>
+    const API_URL = "YOUR_API_GATEWAY_URL_HERE"; // Replace with your actual AWS API Gateway URL
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let gameInterval;
+    let score = 0;
+    let wave = 1;
+    let longhouseHp = 100;
+    let isGameOver = false;
+
+    let enemies = [];
+    let powerUps = [];
+    let projectiles = [];
+
+    let isShooting = false;
+    let targetX = 0;
+    let targetY = 0;
+    let shootTimer = 0;
+    
+    let shieldActive = false;
+    let shieldTimer = 0;
+    let multiShotActive = false;
+    let multiShotTimer = 0;
+
+    const defender = {
+      x: 35,
+      y: canvas.height / 2
+    };
+
+    function startGame() {
+      document.getElementById("startBtn").style.display = "none";
+      document.getElementById("gameOverScreen").style.display = "none";
+      score = 0;
+      wave = 1;
+      longhouseHp = 100;
+      isGameOver = false;
+      enemies = [];
+      powerUps = [];
+      projectiles = [];
+      isShooting = false;
+      shootTimer = 0;
+      shieldActive = false;
+      shieldTimer = 0;
+      multiShotActive = false;
+      multiShotTimer = 0;
+
+      spawnWave();
+      gameInterval = setInterval(updateGame, 1000 / 60);
+    }
+
+    function spawnWave() {
+      let enemyCount = 3 + wave * 2;
+      for (let i = 0; i < enemyCount; i++) {
+        let isHeavy = Math.random() < 0.08; 
+
+        enemies.push({
+          x: canvas.width + Math.random() * 300 + (i * 60),
+          y: Math.random() * (canvas.height - 110) + 40,
+          width: isHeavy ? 36 : 24,
+          height: isHeavy ? 56 : 40,
+          speed: isHeavy ? 0.8 + (wave * 0.2) : 1.2 + (wave * 0.3),
+          hp: isHeavy ? 4 : 1,
+          maxHp: isHeavy ? 4 : 1,
+          isHeavy: isHeavy
+        });
+      }
+
+      let types = [];
+      if (longhouseHp < 100) types.push('health');
+      types.push('shield', 'multishot');
+
+      if (Math.random() < 0.75 && types.length > 0) {
+        let chosenType = types[Math.floor(Math.random() * types.length)];
+        powerUps.push({
+          x: canvas.width + 100,
+          y: Math.random() * (canvas.height - 80) + 30,
+          width: 26,
+          height: 26,
+          speed: 1.5,
+          type: chosenType
+        });
+      }
+    }
+
+    function getCanvasCoordinates(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top
+      };
+    }
+
+    canvas.addEventListener("mousedown", function(e) {
+      if (isGameOver) return;
+      isShooting = true;
+      const coords = getCanvasCoordinates(e);
+      targetX = coords.x;
+      targetY = coords.y;
+    });
+
+    window.addEventListener("mousemove", function(e) {
+      if (!isShooting || isGameOver) return;
+      const coords = getCanvasCoordinates(e);
+      targetX = coords.x;
+      targetY = coords.y;
+    });
+
+    window.addEventListener("mouseup", function() {
+      isShooting = false;
+    });
+
+    canvas.addEventListener("touchstart", function(e) {
+      if (isGameOver) return;
+      e.preventDefault();
+      isShooting = true;
+      const coords = getCanvasCoordinates(e);
+      targetX = coords.x;
+      targetY = coords.y;
+    }, { passive: false });
+
+    canvas.addEventListener("touchmove", function(e) {
+      if (!isShooting || isGameOver) return;
+      e.preventDefault();
+      const coords = getCanvasCoordinates(e);
+      targetX = coords.x;
+      targetY = coords.y;
+    }, { passive: false });
+
+    window.addEventListener("touchend", function() {
+      isShooting = false;
+    });
+
+    function fireArrow(angleOffset = 0) {
+      const angle = Math.atan2(targetY - defender.y, targetX - defender.x) + angleOffset;
+      const speed = 9;
+
+      projectiles.push({
+        x: defender.x,
+        y: defender.y,
+        dx: Math.cos(angle) * speed,
+        dy: Math.sin(angle) * speed,
+        angle: angle,
+        length: 22,
+        width: 4
+      });
+    }
+
+    // Detailed Minecraft-style human rig with horns for all vikings
+    function drawMinecraftHuman(x, y, w, h, isHeavy, isPlayer = false) {
+      let headSize = w * 0.75;
+      let headX = x + (w - headSize) / 2;
+      let headY = y;
+      
+      let torsoW = w * 0.8;
+      let torsoH = h * 0.45;
+      let torsoX = x + (w - torsoW) / 2;
+      let torsoY = headY + headSize;
+
+      let limbW = w * 0.28;
+      let limbH = h * 0.35;
+      let legY = torsoY + torsoH;
+
+      if (isPlayer) {
+        // --- CHIEFTAIN PLAYER SKIN ---
+        // Legs
+        ctx.fillStyle = "#2c3e50";
+        ctx.fillRect(torsoX + 2, legY, limbW - 1, limbH);
+        ctx.fillRect(torsoX + torsoW - limbW - 1, legY, limbW - 1, limbH);
+
+        // Torso / Tunic
+        ctx.fillStyle = "#c0392b";
+        ctx.fillRect(torsoX, torsoY, torsoW, torsoH);
+        // Belt
+        ctx.fillStyle = "#f39c12";
+        ctx.fillRect(torsoX, torsoY + torsoH - 4, torsoW, 4);
+
+        // Arms
+        ctx.fillStyle = "#c0392b";
+        ctx.fillRect(torsoX - limbW + 2, torsoY, limbW - 2, torsoH - 4);
+        ctx.fillRect(torsoX + torsoW - 2, torsoY, limbW - 2, torsoH - 4);
+
+        // Head & Skin
+        ctx.fillStyle = "#f5cba7";
+        ctx.fillRect(headX, headY, headSize, headSize);
+        // Beard / Hair
+        ctx.fillStyle = "#4a3525";
+        ctx.fillRect(headX, headY + headSize * 0.5, headSize, headSize * 0.5);
+
+        // Horned Helmet
+        ctx.fillStyle = "#34495e";
+        ctx.fillRect(headX - 2, headY - 4, headSize + 4, headSize * 0.5);
+        ctx.fillStyle = "#ecf0f1"; // Horns
+        ctx.fillRect(headX - 6, headY - 8, 5, 5);
+        ctx.fillRect(headX + headSize + 1, headY - 8, 5, 5);
+      } else if (isHeavy) {
+        // --- HEAVY ELITE RAIDER ---
+        // Health Bar above
+        ctx.fillStyle = "#222";
+        ctx.fillRect(x - 4, y - 14, w + 8, 5);
+        ctx.fillStyle = "#e74c3c";
+        ctx.fillRect(x - 3, y - 13, (w + 6) * (this.hp / this.maxHp), 3);
+
+        // Legs (Armored boots)
+        ctx.fillStyle = "#273746";
+        ctx.fillRect(torsoX + 2, legY, limbW - 1, limbH);
+        ctx.fillRect(torsoX + torsoW - limbW - 1, legY, limbW - 1, limbH);
+
+        // Torso / Heavy Bronze Armor
+        ctx.fillStyle = "#78281f";
+        ctx.fillRect(torsoX, torsoY, torsoW, torsoH);
+        ctx.fillStyle = "#d4ac0d"; // Gold chest plate trim
+        ctx.fillRect(torsoX + 3, torsoY + 4, torsoW - 6, 4);
+
+        // Arms
+        ctx.fillStyle = "#78281f";
+        ctx.fillRect(torsoX - limbW + 2, torsoY, limbW - 2, torsoH - 4);
+        ctx.fillRect(torsoX + torsoW - 2, torsoY, limbW - 2, torsoH - 4);
+
+        // Head
+        ctx.fillStyle = "#f5cba7";
+        ctx.fillRect(headX, headY, headSize, headSize);
+        // Face features / fierce eyes
+        ctx.fillStyle = "#17202a";
+        ctx.fillRect(headX + 4, headY + 5, 3, 3);
+        ctx.fillRect(headX + headSize - 7, headY + 5, 3, 3);
+
+        // Elite Gold Horned Helmet
+        ctx.fillStyle = "#b7950b";
+        ctx.fillRect(headX - 3, headY - 5, headSize + 6, headSize * 0.55);
+        ctx.fillStyle = "#f1c40f"; // Big golden horns
+        ctx.fillRect(headX - 8, headY - 10, 6, 7);
+        ctx.fillRect(headX + headSize + 2, headY - 10, 6, 7);
+      } else {
+        // --- NORMAL RAIDER (Brown Shirt & Horned Helmet) ---
+        // Legs
+        ctx.fillStyle = "#3e2723";
+        ctx.fillRect(torsoX + 2, legY, limbW - 1, limbH);
+        ctx.fillRect(torsoX + torsoW - limbW - 1, legY, limbW - 1, limbH);
+
+        // Torso / Brown Tunic Shirt
+        ctx.fillStyle = "#795548";
+        ctx.fillRect(torsoX, torsoY, torsoW, torsoH);
+        ctx.fillStyle = "#4e342e"; // Darker brown belt
+        ctx.fillRect(torsoX, torsoY + torsoH - 4, torsoW, 3);
+
+        // Arms
+        ctx.fillStyle = "#795548";
+        ctx.fillRect(torsoX - limbW + 2, torsoY, limbW - 2, torsoH - 4);
+        ctx.fillRect(torsoX + torsoW - 2, torsoY, limbW - 2, torsoH - 4);
+
+        // Head & Skin
+        ctx.fillStyle = "#f5cba7";
+        ctx.fillRect(headX, headY, headSize, headSize);
+        // Beard
+        ctx.fillStyle = "#3e2723";
+        ctx.fillRect(headX + 2, headY + headSize * 0.6, headSize - 4, headSize * 0.4);
+
+        // Horned Helmet for normal raider
+        ctx.fillStyle = "#5d4037";
+        ctx.fillRect(headX - 2, headY - 4, headSize + 4, headSize * 0.5);
+        ctx.fillStyle = "#ecf0f1"; // Horns
+        ctx.fillRect(headX - 5, headY - 7, 4, 4);
+        ctx.fillRect(headX + headSize + 1, headY - 7, 4, 4);
+      }
+    }
+
+    function updateGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (isShooting && !isGameOver) {
+        shootTimer++;
+        if (shootTimer >= 12) {
+          shootTimer = 0;
+          if (multiShotActive) {
+            fireArrow(-0.35);
+            fireArrow(-0.17);
+            fireArrow(0);
+            fireArrow(0.17);
+            fireArrow(0.35);
+          } else {
+            fireArrow(0);
+          }
+        }
+      }
+
+      if (shieldActive) {
+        shieldTimer--;
+        if (shieldTimer <= 0) shieldActive = false;
+      }
+      if (multiShotActive) {
+        multiShotTimer--;
+        if (multiShotTimer <= 0) multiShotActive = false;
+      }
+
+      // Draw Wall / Fire Barrier
+      if (shieldActive) {
+        ctx.fillStyle = "#b91c1c";
+        ctx.fillRect(0, 0, 50, canvas.height);
+        ctx.fillStyle = "#f97316";
+        ctx.fillRect(40, 0, 16, canvas.height);
+
+        let time = Date.now() / 80;
+        ctx.fillStyle = "#fbbf24";
+        for (let fy = 0; fy < canvas.height; fy += 20) {
+          let flameHeight = 12 + Math.sin(time + fy) * 6;
+          ctx.beginPath();
+          ctx.moveTo(50, fy);
+          ctx.lineTo(50 + flameHeight, fy + 10);
+          ctx.lineTo(50, fy + 20);
+          ctx.fill();
+        }
+      } else {
+        ctx.fillStyle = "#6b4423";
+        ctx.fillRect(0, 0, 50, canvas.height);
+        ctx.fillStyle = "#a06b38";
+        ctx.fillRect(40, 0, 10, canvas.height);
+      }
+
+      // Defender Chieftain (Minecraft Human style)
+      drawMinecraftHuman(defender.x - 12, defender.y - 24, 24, 48, false, true);
+
+      // Update & Draw Feathered Bow Arrows
+      for (let i = projectiles.length - 1; i >= 0; i--) {
+        let p = projectiles[i];
+        p.x += p.dx;
+        p.y += p.dy;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.angle);
+        
+        ctx.fillStyle = "#8d6e63";
+        ctx.fillRect(-p.length / 2, -p.width / 2, p.length, p.width);
+
+        ctx.fillStyle = "#bdc3c7";
+        ctx.beginPath();
+        ctx.moveTo(p.length / 2, -p.width * 1.5);
+        ctx.lineTo(p.length / 2 + 8, 0);
+        ctx.lineTo(p.length / 2, p.width * 1.5);
+        ctx.fill();
+
+        ctx.fillStyle = "#e74c3c";
+        ctx.beginPath();
+        ctx.moveTo(-p.length / 2, 0);
+        ctx.lineTo(-p.length / 2 - 6, -6);
+        ctx.lineTo(-p.length / 2 - 3, 0);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(-p.length / 2, 0);
+        ctx.lineTo(-p.length / 2 - 6, 6);
+        ctx.lineTo(-p.length / 2 - 3, 0);
+        ctx.fill();
+
+        ctx.restore();
+
+        if (p.x > canvas.width || p.x < 0 || p.y > canvas.height || p.y < 0) {
+          projectiles.splice(i, 1);
+        }
+      }
+
+      // Power-Ups
+      for (let i = powerUps.length - 1; i >= 0; i--) {
+        let pu = powerUps[i];
+        pu.x -= pu.speed;
+
+        let cx = pu.x + pu.width / 2;
+        let cy = pu.y + pu.height / 2;
+
+        if (pu.type === 'health') {
+          ctx.fillStyle = "#27ae60";
+          ctx.fillRect(pu.x, pu.y, pu.width, pu.height);
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(pu.x + pu.width * 0.35, pu.y + 4, pu.width * 0.3, pu.height - 8);
+          ctx.fillRect(pu.x + 4, pu.y + pu.height * 0.35, pu.width - 8, pu.height * 0.3);
+        } else if (pu.type === 'shield') {
+          ctx.fillStyle = "#4a235a";
+          ctx.fillRect(pu.x, pu.y, pu.width, pu.height);
+
+          ctx.fillStyle = "#e74c3c";
+          ctx.beginPath();
+          ctx.moveTo(cx, pu.y + 3);
+          ctx.lineTo(pu.x + pu.width - 3, pu.y + 8);
+          ctx.lineTo(cx, pu.y + pu.height - 3);
+          ctx.lineTo(pu.x + 3, pu.y + 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.strokeStyle = "#f1c40f";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else if (pu.type === 'multishot') {
+          ctx.fillStyle = "#4a235a";
+          ctx.fillRect(pu.x, pu.y, pu.width, pu.height);
+
+          ctx.strokeStyle = "#bdc3c7";
+          ctx.lineWidth = 2.5;
+          
+          ctx.beginPath();
+          ctx.moveTo(cx - 7, cy - 7);
+          ctx.lineTo(cx + 7, cy + 7);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.moveTo(cx - 7, cy + 7);
+          ctx.lineTo(cx + 7, cy - 7);
+          ctx.stroke();
+
+          ctx.fillStyle = "#f1c40f";
+          ctx.fillRect(cx - 2, cy - 2, 4, 4);
+        }
+
+        if (pu.x <= 50) {
+          powerUps.splice(i, 1);
+          continue;
+        }
+
+        for (let j = projectiles.length - 1; j >= 0; j--) {
+          let p = projectiles[j];
+          if (
+            p.x > pu.x &&
+            p.x < pu.x + pu.width &&
+            p.y > pu.y &&
+            p.y < pu.y + pu.height
+          ) {
+            if (pu.type === 'health') {
+              longhouseHp = Math.min(100, longhouseHp + 20);
+            } else if (pu.type === 'shield') {
+              shieldActive = true;
+              shieldTimer = 600; // 10 seconds
+            } else if (pu.type === 'multishot') {
+              multiShotActive = true;
+              multiShotTimer = 300; // 5 seconds
+            }
+            powerUps.splice(i, 1);
+            projectiles.splice(j, 1);
+            score += 50;
+            break;
+          }
+        }
+      }
+
+      // Enemies (Minecraft-style humanoids)
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        let enemy = enemies[i];
+        enemy.x -= enemy.speed;
+
+        drawMinecraftHuman.call(enemy, enemy.x, enemy.y, enemy.width, enemy.height, enemy.isHeavy, false);
+
+        if (enemy.x <= 50) {
+          if (shieldActive) {
+            score += 15;
+          } else {
+            longhouseHp -= enemy.isHeavy ? 25 : 10;
+            if (longhouseHp <= 0) {
+              longhouseHp = 0;
+              endGame();
+            }
+          }
+          enemies.splice(i, 1);
+          continue;
+        }
+
+        for (let j = projectiles.length - 1; j >= 0; j--) {
+          let p = projectiles[j];
+          if (
+            p.x > enemy.x &&
+            p.x < enemy.x + enemy.width &&
+            p.y > enemy.y &&
+            p.y < enemy.y + enemy.height
+          ) {
+            enemy.hp--;
+            projectiles.splice(j, 1);
+
+            if (enemy.hp <= 0) {
+              enemies.splice(i, 1);
+              score += enemy.isHeavy ? 100 : 25;
+            }
+            break;
+          }
+        }
+      }
+
+      if (enemies.length === 0 && !isGameOver) {
+        wave++;
+        score += 100 * wave;
+        spawnWave();
+      }
+
+      let healthText = "Longhouse HP: " + longhouseHp;
+      if (shieldActive) healthText += ` [🔥 FIRE WALL: ${Math.ceil(shieldTimer/60)}s]`;
+      if (multiShotActive) healthText += ` [⚔️ 5-SHOT: ${Math.ceil(multiShotTimer/60)}s]`;
+
+      document.getElementById("waveDisplay").textContent = "Wave: " + wave;
+      document.getElementById("scoreDisplay").textContent = "Score: " + score;
+      document.getElementById("healthDisplay").textContent = healthText;
+    }
+
+    function endGame() {
+      clearInterval(gameInterval);
+      isGameOver = true;
+      document.getElementById("gameOverScreen").style.display = "block";
+    }
+
+    function restartGame() {
+      startGame();
+    }
+
+    async function submitScore() {
+      const nameInput = document.getElementById("playerName").value.trim() || "Anonymous";
+      const finalScore = score;
+
+      try {
+        const response = await fetch(`${API_URL}?action=submit_score&name=${encodeURIComponent(nameInput)}&score=${finalScore}`);
+        const data = await response.json();
+        alert(data.message || "Score submitted successfully!");
+        document.getElementById("gameOverScreen").style.display = "none";
+        document.getElementById("startBtn").style.display = "block";
+      } catch (err) {
+        console.error("Error submitting score:", err);
+        alert("Failed to save score. Check your network or API connection.");
+      }
+    }
+  </script>
+</body>
+</html>
